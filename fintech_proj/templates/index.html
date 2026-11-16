@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>GovernLens</title>
+        <!-- Favicon-->
+        <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+        
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+        <!-- Javascripts -->
+        <script src="{{ url_for('static', filename='js/KLine.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/infoTransparency.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/group.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/news.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/shareholding_stability.js') }}"></script>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+        <script src="https://d3js.org/d3.v6.js"></script>
+        <style>
+            /* 新增樣式，確保 SVG 顯示正確 */
+            #kLineChart {
+                overflow: visible;
+            }
+    
+            .x-axis text,
+            .y-axis text {
+                font-size: 12px;
+            }
+    
+            .x-axis path,
+            .y-axis path,
+            .x-axis line,
+            .y-axis line {
+                fill: none;
+                stroke: #000;
+                shape-rendering: crispEdges;
+            }
+        </style>
+        
+    </head>
+    <body>
+        <div class="d-flex" id="wrapper">
+            <!-- Sidebar-->
+            <div class="border-end bg-white sider_add" id="sidebar-wrapper">
+                <div class="sidebar-heading border-bottom bg-light" > 
+                    <div class="logo">
+                        <img style="width: 240px; height: 60px; margin-right: 5px;" src="{{ url_for('static', filename='img/GovernLens.png') }}" alt="My Image">
+                    </div>
+                </div>
+                <div class="list-group list-group-flush side_inside">
+
+                    <!-- 選擇公司 -->
+                    <div class="select_com">
+                        <!-- 選擇第一家公司 -->
+                        <form class="d-flex"  id="searchForm1">
+                            <input class="form-control me-2" id="searchInput1" placeholder="Company 1" aria-label="Search" type="text">
+                            <button class="btn btn-outline-success" type="submit" id="searchButton">Add</button>
+                        </form>
+                        <!-- 選擇第二家公司 -->
+                        <form class="d-flex"  id="searchForm2">
+                            <input class="form-control me-2" id="searchInput2" placeholder="Company 2" aria-label="Search" type="text">
+                            <button class="btn btn-outline-success" type="submit" id="searchButton">Add</button>
+                        </form>
+                    </div>
+                    
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#基本資料"><img style="width: 20px; height: 20px; margin-right: 5px;" src="{{ url_for('static', filename='img/leaf.png') }}" alt="My Image">基本資料</a>
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#股權分配資訊"><img style="width: 20px; height: 20px; margin-right: 5px;" src="{{ url_for('static', filename='img/leaf.png') }}" alt="My Image">股權分配資訊/控制持股</a>
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#董監酬勞"><img style="width: 20px; height: 20px; margin-right: 5px;" src="{{ url_for('static', filename='img/leaf.png') }}" alt="My Image">董監酬勞/新聞</a>
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#董監持股質押"><img style="width: 20px; height: 20px; margin-right: 5px;" src="{{ url_for('static', filename='img/leaf.png') }}" alt="My Image">董監持股質押/轉投資/人事穩定度</a>
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#歷史K線圖"><img style="width: 20px; height: 20px; margin-right: 5px;" src="{{ url_for('static', filename='img/leaf.png') }}" alt="My Image">歷史K線圖</a>
+                    <!-- <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!">Status</a> -->
+                </div>
+            </div>
+
+            <!-- Page content wrapper-->
+            <div id="page-content-wrapper" class="side_wrap">
+                <!-- Page content-->
+                <div class="container-fluid total_wrap">
+                    <!-- 2 基本資料 + 集團資訊 -->
+                    <div class="company_info temp" id="基本資料">
+                        <div class="stock_a" id="info1">
+                        </div>
+                        <div class="stock_b" id="info2"></div>
+                    </div>
+
+                    <div class="test_big temp">
+                        <!-- 2 股權分配資訊 -->
+                        <div class="title_wrap temp" id="股權分配資訊">
+                            <h3>股權分配資訊</h3>
+                            <div class="two_col temp">
+                                <div class="stock_a" id="share_type_a"></div>
+                                <div class="stock_b" id="share_type_b"></div>
+                            </div>
+                        </div>
+
+                        <div class="title_wrap temp" id="控制持股">
+                            <h3>控制持股</h3>
+                            <!-- 2 控制持股 -->
+                            <div class="two_col temp">
+                                <div class="stock_a" id="contral_a_test"></div>
+                                <div class="stock_a" id="contral_b_test"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="test_big temp">
+                        <!-- 2 董監酬勞-->
+                        <div class="title_wrap temp" id="董監酬勞">
+                            <h3>董監酬勞</h3>
+                            <div class="two_col temp">
+                                <div class="stock_a" id="salary_a_test"></div>
+                                <div class="stock_a" id="salary_b_test"></div>
+                            </div>
+                        </div>
+
+                        <!-- 2 新聞-->
+                        <div class="title_wrap temp" id="新聞">
+                            <h3>新聞</h3>
+                            <div class="two_col temp">
+                                <div class="stock_a" id="News1"></div>
+                                <div class="stock_b" id="News2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 單圖比較 -->
+                    <div class="big_wrap_one temp" id="董監持股質押">
+                        <div class="one_col temp">
+                            <!-- 1 董監持股質押 -->
+                            <div class="title_wrap_one temp">
+                                <h3>董監持股質押</h3>
+                                <div class="one_inside temp">
+                                    <div id = "shareholdingandpledge"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="one_col temp">
+                            <!-- 1 資訊透明度-->
+                            <div class="title_wrap_one temp">
+                                <h3>轉投資</h3>
+                                <div class="one_inside temp" id="infoTransArea">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="one_col temp temp">
+                            <!-- 1 人事穩定度-->
+                            <div class="title_wrap_one temp">
+                                <h3>人事穩定度</h3>
+                                <div class="one_inside temp">
+                                    <div id = "personnalstability"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2 k線圖 -->
+                    <div class="candle temp" id="歷史K線圖">
+                        <h3>歷史K線圖</h3>
+                        <div class="candle_title temp">
+                            <div class="stock_a" id="KLine1">
+                                <svg id="kLineChart1"></svg>
+                            </div>
+                            <div class="stock_b" id="KLine2">
+                                <svg id="kLineChart2"></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <script>
+            var allcompanies = [];
+            window.onload = function() {
+                getallcompany()
+                    .then(companies => {
+                        allcompanies = companies;
+                    });
+            };
+            // 搜尋公司 1
+            const form1 = document.getElementById('searchForm1')
+            const input1 = document.getElementById('searchInput1')
+            
+            searchForm1.addEventListener('submit', () => {    
+                // 阻止表單預設提交   
+                event.preventDefault();
+                //防呆
+                if (document.getElementById('searchInput1').value == document.getElementById('searchInput2').value ){
+                    if(document.getElementById('searchInput1').value =="" && document.getElementById('searchInput2').value=="")
+                        alert("請選擇公司!");
+                    else{
+                        alert("請選擇兩家不同的公司!");
+                    }
+                }else{
+                    if (existcheck(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value,allcompanies)){
+                        // 獲取輸入資料
+                        var stockSymbol = input1.value;
+                        getContral(stockSymbol, "a");
+                        getShareType(stockSymbol, "a");
+                        getSalary(stockSymbol, "a");
+                        getDataKL(stockSymbol, 1);
+                        getDataInfo(stockSymbol, 1);
+                        getDataNews(stockSymbol, 1);
+                        getDataIT(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value);
+
+                        //持股質押
+                        //直接把兩個表單的值都丟進去，再決定要畫一家還兩家
+                        drawgraph3(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value);
+                        drawgraph5(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value);
+                    }
+                }
+            });
+
+            // 搜尋公司 2
+            const form2 = document.getElementById('searchForm2')
+            const input2 = document.getElementById('searchInput2')
+            searchForm2.addEventListener('submit', () => {           
+                // 阻止表單預設提交   
+                event.preventDefault();
+                if (document.getElementById('searchInput1').value == document.getElementById('searchInput2').value ){
+                    if(document.getElementById('searchInput1').value =="" && document.getElementById('searchInput2').value=="")
+                        alert("請選擇公司!");
+                    else{
+                        alert("請選擇兩家不同的公司!");
+                    }
+                }else{
+                    if (existcheck(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value,allcompanies)){
+                    // 獲取輸入資料
+                    var stockSymbol = input2.value;
+
+                    // Functions
+                    getContral(stockSymbol, "b");
+                    getShareType(stockSymbol, "b");
+                    getSalary(stockSymbol, "b");
+                    getDataKL(stockSymbol, 2);
+                    getDataInfo(stockSymbol, 2);
+                    getDataNews(stockSymbol, 2);
+                    getDataIT(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value);
+
+                    //持股質押
+                    //直接把兩個表單的值都丟進去，再決定要畫一家還兩家
+                    drawgraph3(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value);
+                    drawgraph5(document.getElementById('searchInput1').value,document.getElementById('searchInput2').value);
+                    }
+                }
+            });
+
+            // -------------------------------
+            function getContral(stockSymbol, a_or_b) {    
+                fetch(`/getContral?symbol=${stockSymbol}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // 數據
+                        var dataTrans = JSON.parse(data);
+                        if(a_or_b == "a"){
+                            var pre = document.getElementById("contral_a_svg");
+                            if(pre){
+                                pre.parentNode.removeChild(pre);
+                            }
+                            // 配置圖表的寬度、高度等參數
+                            var temp_width = document.getElementById("salary_a_test").offsetWidth;
+                            /*const width = 400;
+                            const height = 400;*/
+                            var width = document.getElementById("contral_a_test").getBoundingClientRect().width;
+                            var height = document.getElementById("contral_a_test").getBoundingClientRect().height;
+                            const margin = { top: 65, right: 40, bottom: 40, left: 40 };
+
+                            // 建立 SVG 容器
+                            const svg = d3.select("#contral_a_test")
+                                .append("svg")
+                                .attr("width", width)
+                                .attr("height", height)
+                                .attr('id', "contral_a_svg");
+
+                            // 使用 d3.stack() 建立堆疊資料
+                            const stack = d3.stack()
+                                .keys(["直接持股%", "間接持股%"])
+                                .order(d3.stackOrderNone)
+                                .offset(d3.stackOffsetNone);
+
+                            const stackedData = stack(dataTrans);
+
+                            // 設定 x 軸和 y 軸的比例尺
+                            const xScale = d3.scaleBand()
+                                .domain(dataTrans.map(d => `${d.年}-${d.月}`))
+                                .range([margin.left, width - margin.right])
+                                .padding(0.1);
+
+                            const yScale = d3.scaleLinear()
+                                .domain([0, 100])
+                                .range([height - margin.bottom, margin.top]);
+
+                            // 建立顏色比例尺
+                            const color = d3.scaleOrdinal()
+                                .domain(["直接持股%", "間接持股%"])
+                                .range(["RGB(102, 153, 181)", "RGB(234, 176, 125)"]);
+
+                            // 建立堆疊長條圖
+                            svg.selectAll("g")
+                                .data(stackedData)
+                                .enter().append("g")
+                                .attr("fill", d => color(d.key))
+                                .selectAll("rect")
+                                .data(d => d)
+                                .enter().append("rect")
+                                .attr("x", d => xScale(`${d.data.年}-${d.data.月}`))
+                                .attr("y", d => yScale(d[1]))
+                                .attr("height", d => yScale(d[0]) - yScale(d[1]))
+                                .attr("width", xScale.bandwidth());
+
+                            // 加入 x 軸
+                            svg.append("g")
+                                .attr("transform", `translate(0,${height - margin.bottom})`)
+                                .call(d3.axisBottom(xScale))
+                                .selectAll("text") // 選取所有文字標籤
+                                .attr("transform", "rotate(-25)") // 旋轉角度，負值表示逆時針旋轉
+                                .style("text-anchor", "end"); // 文字對齊方式，這裡選擇末端對齊;
+
+                            // 加入 y 軸
+                            svg.append("g")
+                                .attr("transform", `translate(${margin.left},0)`)
+                                .call(d3.axisLeft(yScale));
+                            
+                            // 建立圖例容器
+                            const legend = svg.append("g")
+                            .attr("class", "legend")
+                            .attr("transform", `translate(${width - margin.right}, ${margin.top})`);
+
+                            var temp_location = ['translate(0, 0)', 'translate(120, 0)']
+                            // 設定圖例項目
+                            const legendItems = legend.selectAll(".legend-item")
+                            .data(["直接持股%", "間接持股%"])
+                            .enter().append("g")
+                            .attr("class", "legend-item")
+                            .attr("transform", (d, i) => temp_location[i]);
+                            
+
+                            // 加入圖例矩形
+                            legendItems.append("rect")
+                            .attr("width", 18)
+                            .attr("height", 18)
+                            .attr("fill", d => color(d));
+
+                            // 加入圖例文字
+                            legendItems.append("text")
+                            .attr("x", 24)
+                            .attr("y", 9)
+                            .attr("dy", "0.35em")
+                            .text(d => d);
+
+                            // 透過計算總寬度，設定圖例容器的整體水平偏移
+                            const totalLegendWidth = legend.node().getBBox().width;
+                            legend.attr("transform", `translate(20, 5)`);
+
+                            svg.append("text")
+                                .attr("y", 38)
+                                .attr("x", 26)
+                                .attr("dy", "1em")
+                                .style("text-anchor", "middle")
+                                .text("(%)");
+                        }
+                        else{
+                            var pre = document.getElementById("contral_b_svg");
+                            if(pre){
+                                pre.parentNode.removeChild(pre);
+                            }
+                            // 配置圖表的寬度、高度等參數
+                            //const width = 400;
+                            //const height = 400;
+                            var width = document.getElementById("contral_b_test").getBoundingClientRect().width;
+                            var height = document.getElementById("contral_b_test").getBoundingClientRect().height;
+                            const margin = { top: 65, right: 40, bottom: 40, left: 40 };
+
+                            // 建立 SVG 容器
+                            const svg = d3.select("#contral_b_test")
+                                .append("svg")
+                                .attr("width", width)
+                                .attr("height", height)
+                                .attr('id', "contral_b_svg");
+
+                            // 使用 d3.stack() 建立堆疊資料
+                            const stack = d3.stack()
+                                .keys(["直接持股%", "間接持股%"])
+                                .order(d3.stackOrderNone)
+                                .offset(d3.stackOffsetNone);
+
+                            const stackedData = stack(dataTrans);
+
+                            // 設定 x 軸和 y 軸的比例尺
+                            const xScale = d3.scaleBand()
+                                .domain(dataTrans.map(d => `${d.年}-${d.月}`))
+                                .range([margin.left, width - margin.right])
+                                .padding(0.1);
+
+                            const yScale = d3.scaleLinear()
+                                .domain([0, 100])
+                                .range([height - margin.bottom, margin.top]);
+
+                            // 建立顏色比例尺
+                            const color = d3.scaleOrdinal()
+                                .domain(["直接持股%", "間接持股%"])
+                                .range(["RGB(102, 153, 181)", "RGB(234, 176, 125)"]);
+
+                            // 建立堆疊長條圖
+                            svg.selectAll("g")
+                                .data(stackedData)
+                                .enter().append("g")
+                                .attr("fill", d => color(d.key))
+                                .selectAll("rect")
+                                .data(d => d)
+                                .enter().append("rect")
+                                .attr("x", d => xScale(`${d.data.年}-${d.data.月}`))
+                                .attr("y", d => yScale(d[1]))
+                                .attr("height", d => yScale(d[0]) - yScale(d[1]))
+                                .attr("width", xScale.bandwidth());
+
+                            // 加入 x 軸
+                            svg.append("g")
+                                .attr("transform", `translate(0,${height - margin.bottom})`)
+                                .call(d3.axisBottom(xScale))
+                                .selectAll("text") // 選取所有文字標籤
+                                .attr("transform", "rotate(-25)") // 旋轉角度，負值表示逆時針旋轉
+                                .style("text-anchor", "end"); // 文字對齊方式，這裡選擇末端對齊;
+
+                            // 加入 y 軸
+                            svg.append("g")
+                                .attr("transform", `translate(${margin.left},0)`)
+                                .call(d3.axisLeft(yScale));
+                            
+                            svg.append("text")
+                                .attr("y", 38)
+                                .attr("x", 26)
+                                .attr("dy", "1em")
+                                .style("text-anchor", "middle")
+                                .text("(%)");
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+            }
+            
+            function getShareType(stockSymbol, a_or_b){    
+                fetch(`/getShareType?symbol=${stockSymbol}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // 數據
+                        var dataTrans = JSON.parse(data);
+                        if(a_or_b == "a"){
+                            var pre = document.getElementById("share_type_a_svg");
+                            if(pre){
+                                pre.parentNode.removeChild(pre);
+                            }
+                            // 配置圖表的寬度、高度等參數
+                            /*const width = 400;
+                            const height = 400;*/
+                            var width = document.getElementById("share_type_a").getBoundingClientRect().width;
+                            var height = document.getElementById("share_type_a").getBoundingClientRect().height;
+                            const margin = { top: 65, right: 40, bottom: 40, left: 40 };
+
+                            // 建立 SVG 容器
+                            const svg = d3.select("#share_type_a")
+                                .append("svg")
+                                .attr("width", width)
+                                .attr("height", height)
+                                .attr('id', "share_type_a_svg");
+
+                            // 使用 d3.stack() 建立堆疊資料
+                            const stack = d3.stack()
+                                .keys(["外國法人持股%", "其他法人持股", "外國金融機構持股%", "本國金融機構持股%", "本國政府機構持股%", "外國自然人持股%", "本國自然人持股%"])
+                                .order(d3.stackOrderNone)
+                                .offset(d3.stackOffsetNone);
+
+                            const stackedData = stack(dataTrans);
+
+                            // 設定 x 軸和 y 軸的比例尺
+                            const xScale = d3.scaleBand()
+                                .domain(dataTrans.map(d => `${d.年}-${d.月}`))
+                                .range([margin.left, width - margin.right])
+                                .padding(0.1);
+
+                            const yScale = d3.scaleLinear()
+                                .domain([0, 100])
+                                .range([height - margin.bottom, margin.top]);
+
+                            // 建立顏色比例尺
+                            const color = d3.scaleOrdinal()
+                                .domain(["外國法人持股%", "其他法人持股", "外國金融機構持股%", "本國金融機構持股%", "本國政府機構持股%", "外國自然人持股%", "本國自然人持股%"])
+                                .range(["RGB(57, 109, 123)", "RGB(140, 162, 99)", "RGB(102, 153, 181)", "RGB(160, 185, 194)", "RGB(191, 199, 171)", "RGB(202, 156, 155)", "RGB(234, 176, 125)"]);
+
+                            // 建立堆疊長條圖
+                            svg.selectAll("g")
+                                .data(stackedData)
+                                .enter().append("g")
+                                .attr("fill", d => color(d.key))
+                                .selectAll("rect")
+                                .data(d => d)
+                                .enter().append("rect")
+                                .attr("x", d => xScale(`${d.data.年}-${d.data.月}`))
+                                .attr("y", d => yScale(d[1]))
+                                .attr("height", d => yScale(d[0]) - yScale(d[1]))
+                                .attr("width", xScale.bandwidth());
+
+                            // 加入 x 軸
+                            svg.append("g")
+                                .attr("transform", `translate(0,${height - margin.bottom})`)
+                                .call(d3.axisBottom(xScale))
+                                .selectAll("text") // 選取所有文字標籤
+                                .attr("transform", "rotate(-25)") // 旋轉角度，負值表示逆時針旋轉
+                                .style("text-anchor", "end"); // 文字對齊方式，這裡選擇末端對齊;
+
+                            // 加入 y 軸
+                            svg.append("g")
+                                .attr("transform", `translate(${margin.left},0)`)
+                                .call(d3.axisLeft(yScale));
+
+                            // 建立圖例容器
+                            const legend = svg.append("g")
+                                .attr("class", "legend")
+                                .attr("transform", `translate(${width - margin.right}, ${margin.top})`);
+
+                            var n = 3;
+                            var itemWidth =80;
+                            var itemHeight = 18;
+                            //var m = 
+                            var temp_location = ["translate(-4,0)", "translate(139,0)", "translate(-4,20)",
+                                    "translate(139,20)", "translate(-4,39)", "translate(139,39)", "translate(244,0)"]
+                            // 設定圖例項目
+                            const legendItems = legend.selectAll(".legend-item")
+                                .data(["外國法人持股%", "其他法人持股", "外國金融機構持股%", "本國金融機構持股%", "本國政府機構持股%", "外國自然人持股%", "本國自然人持股%"])
+                                .enter().append("g")
+                                .attr("class", "legend-item")
+                                .attr("transform", function(d,i) { return temp_location[i]; });
+                            
+                            
+                            //.attr("transform", (d, i) => `translate(0, ${i * 20})`);
+
+                            // 加入圖例矩形
+                            legendItems.append("rect")
+                                .attr("width", 12)
+                                .attr("height", 12)
+                                .attr("fill", d => color(d));
+
+                            // 加入圖例文字
+                            legendItems.append("text")
+                                .attr("x", 15)
+                                .attr("y", 7)
+                                .attr("dy", "0.35em")
+                                .text(d => d)
+                                .attr("font-size", "14px");
+
+                            // 透過計算總寬度，設定圖例容器的整體水平偏移
+                            const totalLegendWidth = legend.node().getBBox().width;
+                            legend.attr("transform", `translate(20, 0)`);
+                        }
+                        else{
+                            var pre = document.getElementById("share_type_b_svg");
+                            if(pre){
+                                pre.parentNode.removeChild(pre);
+                            }
+                            // 配置圖表的寬度、高度等參數
+                            var width = document.getElementById("share_type_b").getBoundingClientRect().width;
+                            var height = document.getElementById("share_type_b").getBoundingClientRect().height;
+                            const margin = { top: 65, right: 40, bottom: 40, left: 20 };
+
+                            // 建立 SVG 容器
+                            const svg = d3.select("#share_type_b")
+                                .append("svg")
+                                .attr("width", width)
+                                .attr("height", height)
+                                .attr('id', "share_type_b_svg");
+
+                            // 使用 d3.stack() 建立堆疊資料
+                            const stack = d3.stack()
+                                .keys(["外國法人持股%", "其他法人持股", "外國金融機構持股%", "本國金融機構持股%", "本國政府機構持股%", "外國自然人持股%", "本國自然人持股%"])
+                                .order(d3.stackOrderNone)
+                                .offset(d3.stackOffsetNone);
+
+                            const stackedData = stack(dataTrans);
+
+                            // 設定 x 軸和 y 軸的比例尺
+                            const xScale = d3.scaleBand()
+                                .domain(dataTrans.map(d => `${d.年}-${d.月}`))
+                                .range([margin.left, width - margin.right])
+                                .padding(0.1);
+
+                            const yScale = d3.scaleLinear()
+                                .domain([0, 100])
+                                .range([height - margin.bottom, margin.top]);
+
+                            // 建立顏色比例尺
+                            const color = d3.scaleOrdinal()
+                                .domain(["外國法人持股%", "其他法人持股", "外國金融機構持股%", "本國金融機構持股%", "本國政府機構持股%", "外國自然人持股%", "本國自然人持股%"])
+                                .range(["RGB(57, 109, 123)", "RGB(140, 162, 99)", "RGB(102, 153, 181)", "RGB(160, 185, 194)", "RGB(191, 199, 171)", "RGB(202, 156, 155)", "RGB(234, 176, 125)"]);
+
+                            // 建立堆疊長條圖
+                            svg.selectAll("g")
+                                .data(stackedData)
+                                .enter().append("g")
+                                .attr("fill", d => color(d.key))
+                                .selectAll("rect")
+                                .data(d => d)
+                                .enter().append("rect")
+                                .attr("x", d => xScale(`${d.data.年}-${d.data.月}`))
+                                .attr("y", d => yScale(d[1]))
+                                .attr("height", d => yScale(d[0]) - yScale(d[1]))
+                                .attr("width", xScale.bandwidth());
+
+                            // 加入 x 軸
+                            svg.append("g")
+                                .attr("transform", `translate(0,${height - margin.bottom})`)
+                                .call(d3.axisBottom(xScale))
+                                .selectAll("text") // 選取所有文字標籤
+                                .attr("transform", "rotate(-25)") // 旋轉角度，負值表示逆時針旋轉
+                                .style("text-anchor", "end"); // 文字對齊方式，這裡選擇末端對齊;
+
+                            // 加入 y 軸
+                            svg.append("g")
+                                .attr("transform", `translate(${margin.left},0)`)
+                                .call(d3.axisLeft(yScale));
+
+                            svg.append("text")
+                                .attr("y", 38)
+                                .attr("x", 26)
+                                .attr("dy", "1em")
+                                .style("text-anchor", "middle")
+                                .text("(%)");
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+            }
+
+            function getSalary(stockSymbol, a_or_b){    
+                fetch(`/getSalary?symbol=${stockSymbol}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // 數據
+                        var dataTrans = JSON.parse(data);
+                        if(a_or_b == "a"){
+                            var pre = document.getElementById("salary_a_test_baby");
+                            if(pre){
+                                pre.parentNode.removeChild(pre);
+                            }
+                            // // set the dimensions and margins of the graph
+                            const margin = {top: 50, right: 30, bottom: 70, left: 60},
+                            width = 400 - margin.left - margin.right,
+                            height = 400 - margin.top - margin.bottom;
+                            // append the svg object to the body of the page
+                            const svg = d3.select("#salary_a_test")
+                            .append("svg")
+                                .attr("width", width + margin.left + margin.right)
+                                .attr("height", height + margin.top + margin.bottom)
+                                .attr("id", 'salary_a_test_baby')
+                            .append("g")
+                                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                            //在此可以過濾資料
+                            const categories = ["董事平均酬勞","監察人平均酬勞","總經理_副總_平均薪金"];
+                            let filteredData = Array.isArray(dataTrans[0]) ? dataTrans[0] : [dataTrans[0]];
+                            // 將缺失值補為0
+                            filteredData = filteredData.map(item => {
+                                return {
+                                    ...item,
+                                    董事平均酬勞: item.董事平均酬勞 || 0,
+                                    監察人平均酬勞: item.監察人平均酬勞 || 0,
+                                    總經理_副總_平均薪金: item.總經理_副總_平均薪金 || 0,
+                                };
+                            });
+                            const values = categories.map(category => filteredData[0][category]);
+                            var ymax = 1;
+                            if(d3.max(values)>ymax){ymax = d3.max(values)}
+                            // Set up scales
+                            const x = d3.scaleBand()
+                            .domain(categories)
+                            .range([0, width])
+                            .padding(0.2);
+                            
+                            const y = d3.scaleLinear()
+                            .domain([0, ymax])
+                            .range([height, 0]);
+
+                            var temp_color = ["RGB(102, 153, 181)",  "RGB(140, 162, 99)", "RGB(234, 176, 125)"];
+                            svg.selectAll("rect")
+                            .data(values)
+                            .enter().append("rect")
+                            .attr("x", (d, i) => x(categories[i]))
+                            .attr("y", d => y(d))
+                            .attr("rx", "5")
+                            .attr("ry", "5")
+                            .attr("width", x.bandwidth())
+                            .attr("height", d => height - y(d))
+                            .attr("fill", (d, i) => temp_color[i])
+                            
+                            // Add x-axis
+                            svg.append("g")
+                            .attr("transform", `translate(0, ${height})`)
+                            .call(d3.axisBottom(x))
+                            .selectAll("text")
+                            .style("text-anchor", "end")
+                            .attr("dx", "0em")
+                            .attr("dy", "1em")
+                            .attr("transform", "rotate(-15)")
+                            .attr("font-size", "14px")
+                            .attr("font-weight", "600")
+                            
+                            
+                            // Add y-axis
+                            svg.append("g")
+                            .call(d3.axisLeft(y));
+
+                            svg.append("text")
+                            .attr("y", -10)
+                            .attr("x", -40)
+                            .attr("dy", "1em")
+                            .style("text-anchor", "middle")
+                            .text("千元");
+
+                            var temp_location = ['translate(-335, -90)', 'translate(-225, -90)', 'translate(-100, -90)']
+                            // 建立圖例
+                            const legend = svg.append("g")
+                            .attr("class", "legend")
+                            .attr("transform", `translate(${width - margin.right}, ${margin.top})`);
+
+                            // 設定圖例項目
+                            const legendItems = legend.selectAll(".legend-item")
+                            .data(categories)
+                            .enter().append("g")
+                            .attr("class", "legend-item")
+                            .attr("transform", (d, i) => temp_location[i]);
+
+                            // 加入圖例矩形
+                            legendItems.append("rect")
+                            .attr("width", 16)
+                            .attr("height", 16)
+                            .attr("fill", (d, i) => temp_color[i]);
+
+                            // 加入圖例文字
+                            legendItems.append("text")
+                            .attr("x", 19)
+                            .attr("y", 7)
+                            .attr("dy", "0.35em")
+                            .style("font-size", "14px")  // 設定字型大小
+                            .text(d => d);
+                        
+                    }
+                        else{
+                            var pre = document.getElementById("salary_b_test_baby");
+                            if(pre){
+                                pre.parentNode.removeChild(pre);
+                            }
+                            // // set the dimensions and margins of the graph
+                            const margin = {top: 50, right: 30, bottom: 70, left: 60},
+                            width = 400 - margin.left - margin.right,
+                            height = 400 - margin.top - margin.bottom;
+
+                            // append the svg object to the body of the page
+                            const svg = d3.select("#salary_b_test")
+                            .append("svg")
+                                .attr("width", width + margin.left + margin.right)
+                                .attr("height", height + margin.top + margin.bottom)
+                                .attr("id", "salary_b_test_baby")
+                            .append("g")
+                                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                            //在此可以過濾資料
+                            const categories = ["董事平均酬勞","監察人平均酬勞","總經理_副總_平均薪金"];
+                            let filteredData = Array.isArray(dataTrans[0]) ? dataTrans[0] : [dataTrans[0]];
+                            
+                            // 將缺失值補為0
+                            filteredData = filteredData.map(item => {
+                                return {
+                                    ...item,
+                                    董事平均酬勞: item.董事平均酬勞 || 0,
+                                    監察人平均酬勞: item.監察人平均酬勞 || 0,
+                                    總經理_副總_平均薪金: item.總經理_副總_平均薪金 || 0,
+                                };
+                            });
+                            const values = categories.map(category => filteredData[0][category]);
+                            var ymax = 1;
+                            if(d3.max(values)>ymax){ymax = d3.max(values)}
+                            // Set up scales
+                            const x = d3.scaleBand()
+                            .domain(categories)
+                            .range([0, width])
+                            .padding(0.2);
+                            
+                            const y = d3.scaleLinear()
+                            .domain([0, ymax])
+                            .range([height, 0]);
+
+                            var temp_color = ["RGB(102, 153, 181)",  "RGB(140, 162, 99)", "RGB(234, 176, 125)"];
+                            svg.selectAll("rect")
+                            .data(values)
+                            .enter().append("rect")
+                            .attr("x", (d, i) => x(categories[i]))
+                            .attr("y", d => y(d))
+                            .attr("rx", "5")
+                            .attr("ry", "5")
+                            .attr("width", x.bandwidth())
+                            .attr("height", d => height - y(d))
+                            .attr("fill", (d, i) => temp_color[i])
+                            
+                            
+                            // Add x-axis
+                            svg.append("g")
+                            .attr("transform", `translate(0, ${height})`)
+                            .call(d3.axisBottom(x))
+                            .selectAll("text")
+                            .style("text-anchor", "end")
+                            .attr("dx", "0em")
+                            .attr("dy", "1em")
+                            .attr("transform", "rotate(-15)")
+                            .attr("font-size", "14px")
+                            .attr("font-weight", "600")
+                            
+                            
+                            // Add y-axis
+                            svg.append("g")
+                            .call(d3.axisLeft(y));
+
+                            svg.append("text")
+                            .attr("y", -10)
+                            .attr("x", -40)
+                            .attr("dy", "1em")
+                            .style("text-anchor", "middle")
+                            .text("千元");
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+            }
+        </script> 
+    </body>
+</html>
